@@ -3,6 +3,7 @@ const ctxIconCustomer = canvas.getContext('2d');
 const ctxIconCollition = canvas.getContext('2d');
 const ctxSquare = canvas.getContext("2d");
 const ctxIconPickUp = canvas.getContext("2d");
+const ctxIconExpPath = canvas.getContext("2d");
 
 const img = new Image();
 img.src = "img/marker_client.png";
@@ -10,6 +11,8 @@ const imgCollition = new Image();
 imgCollition.src = "img/red_alert.svg";
 const imgPickUp = new Image();
 imgPickUp.src = "img/pick_up.png";
+const imgExpPath = new Image();
+imgExpPath.src = "img/expected_path.png";
 
 const DIM = 40;
 
@@ -105,6 +108,7 @@ async function calculateFirstcustomerSec() {
         value = sortRouteByTime(value);
         const firstSecond = (+value[0].sec) * speedValue;
         const locations = calcWaypoints(value);
+        drawExpectedPath(locations, color);
         await drawRouteAfterSeconds(locations, firstSecond, color);
     }
 }
@@ -116,15 +120,20 @@ async function calculateFirstcustomerSec() {
  */
 function drawRouteAfterSeconds(locations, firstSecond, color) {
     setTimeout(() => {
-        drawRoute(locations, color);
+        drawRoute(locations, color, false);
     }, firstSecond);
 }
+
+function drawExpectedPath(locations, color) {
+    drawRoute(locations, color, true);
+}
+
 /**
  * Draw the customers route, with its image, and the color assigned to it. 
  * @param locationRoute customer list of locations points 
  * @param color HEX color value
  */
-async function drawRoute(locationRoute, color) {
+async function drawRoute(locationRoute, color, isExpectedPath) {
     const locRoute = locationRoute;
     let collition = false
     for (let point of locRoute) {
@@ -134,7 +143,7 @@ async function drawRoute(locationRoute, color) {
             const s = ((+loc.split('U')[2]))
             if (point.s == s && point.x == x && point.y == y) {
                 drawSquare(point.x, point.y, color);
-                await sleep(speedValue);
+                if(isExpectedPath) await sleep(speedValue);
                 drawLocationsCollition(x, y)
                 collition = true
                 continue
@@ -146,21 +155,22 @@ async function drawRoute(locationRoute, color) {
                 return;
             }
             drawSquare(point.x, point.y, color);
-            ctxIconCustomer.drawImage(img, point.x, point.y, DIM, DIM);
+            if(!isExpectedPath) ctxIconCustomer.drawImage(img, point.x, point.y, DIM, DIM);
 
-            if(point.p == 1) {
+            if(point.p == 1 && isExpectedPath) {
                 ctxIconPickUp.drawImage(imgPickUp, point.px, point.py, DIM, DIM);
                 await sleep(speedValue);
                 ctxIconPickUp.clearRect(point.px, point.py, DIM, DIM);
-            } else {
+            } else if(isExpectedPath){
                 await sleep(speedValue);
             }
 
             drawSquare(point.x, point.y, color);
+            //ctxIconExpPath.drawImage(imgExpPath, point.x, point.y, DIM, DIM);
         } collition = false
     }
     await sleep((speedValue / 2));
-    clearRoute(locRoute, color);
+    if(isExpectedPath) clearRoute(locRoute, color);
 
 }
 /**
