@@ -147,12 +147,15 @@ async function drawRoute(locationRoute, color) {
             }
             drawSquare(point.x, point.y, color);
             ctxIconCustomer.drawImage(img, point.x, point.y, DIM, DIM);
-            
+
             if(point.p == 1) {
                 ctxIconPickUp.drawImage(imgPickUp, point.px, point.py, DIM, DIM);
+                await sleep(speedValue);
+                ctxIconPickUp.clearRect(point.px, point.py, DIM, DIM);
+            } else {
+                await sleep(speedValue);
             }
 
-            await sleep(speedValue);
             drawSquare(point.x, point.y, color);
         } collition = false
     }
