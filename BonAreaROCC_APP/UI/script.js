@@ -2,11 +2,14 @@ const canvas = document.getElementById('supermarket');
 const ctxIconCustomer = canvas.getContext('2d');
 const ctxIconCollition = canvas.getContext('2d');
 const ctxSquare = canvas.getContext("2d");
+const ctxIconPickUp = canvas.getContext("2d");
 
 const img = new Image();
 img.src = "img/marker_client.png";
 const imgCollition = new Image();
 imgCollition.src = "img/red_alert.svg";
+const imgPickUp = new Image();
+imgPickUp.src = "img/pick_up.png";
 
 const DIM = 40;
 
@@ -52,17 +55,17 @@ function getDataOfFile(contents) {
     const shopOpeningTime = caculateOpenDate(breakLine);
 
     for (let i = 1; i < breakLine.length; i++) {
-        let [customer_id, ticket_id, x, y, picking, x_y_date_time] = breakLine[i].split(';');
+        let [customer_id, ticket_id, x, y, picking, x_y_date_time, px, py] = breakLine[i].split(';');
         var index = dataCSV.findIndex((element) => element[0] === customer_id);
         if (index === -1) {
             const sec = epochConverter(x_y_date_time, shopOpeningTime)
             if (tickets.has(ticket_id)) {
                 const locationsList = tickets.get(ticket_id);
-                locationsList.push({ x, y, sec, ticket_id });
+                locationsList.push({ x, y, sec, picking, px, py, ticket_id });
                 tickets.set(ticket_id, locationsList);
             }
-            else { tickets.set(ticket_id, [{ x, y, sec, ticket_id }]); }
-            if(ticket_id)locationsTotal.push({ x: x, y: y, s: sec, t: ticket_id });
+            else { tickets.set(ticket_id, [{ x, y, sec, picking, px, py, ticket_id }]); }
+            if(ticket_id)locationsTotal.push({ x: x, y: y, s: sec, p: picking, px: px, py: py, t: ticket_id });
         }
 
     }
@@ -78,11 +81,15 @@ function getDataOfFile(contents) {
 function calcWaypoints(locations) {
     var waypoints = [];
     var time = locations[0].sec;
+    
     for (var i = 0; i < locations.length; i++) {
         var pt = locations[i];
         var dx = (pt.x - 1) * DIM;
         var dy = (pt.y - 1) * DIM;
-        waypoints.push({ x: dx, y: dy, s: pt.sec, t: (time + i) });
+        var picking = pt.picking; 
+        var px = (pt.px - 1) * DIM;
+        var py = (pt.py - 1) * DIM;
+        waypoints.push({ x: dx, y: dy, s: pt.sec, p: picking, px: px, py: py, t: (time + i) });
     }
     return (waypoints);
 }
@@ -141,9 +148,15 @@ async function drawRoute(locationRoute, color) {
             drawSquare(point.x, point.y, color);
             ctxIconCustomer.drawImage(img, point.x, point.y, DIM, DIM);
 
-            await sleep(speedValue);
-            drawSquare(point.x, point.y, color);
+            if(point.p == 1) {
+                ctxIconPickUp.drawImage(imgPickUp, point.px, point.py, DIM, DIM);
+                await sleep(speedValue);
+                ctxIconPickUp.clearRect(point.px, point.py, DIM, DIM);
+            } else {
+                await sleep(speedValue);
+            }
 
+            drawSquare(point.x, point.y, color);
         } collition = false
     }
     await sleep((speedValue / 2));
